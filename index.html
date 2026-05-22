@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Relatório de Viagem</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 800px; margin: auto; background-color: #f9f9f9; }
+        .container { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #333; }
+        h3 { color: #004488; border-bottom: 1px solid #ccc; padding-bottom: 5px; margin-top: 30px; }
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 14px; color: #555; }
+        
+        input, select, textarea { 
+            width: 100%; 
+            padding: 10px; 
+            margin-top: 5px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+            font-family: Arial, sans-serif;
+        }
+        
+        .linha-dupla { display: flex; gap: 15px; align-items: flex-end; }
+        .linha-dupla > div { flex: 1; }
+        .datas-periodo { display: flex; align-items: center; gap: 10px; margin-top: 5px; }
+        .datas-periodo input { margin-top: 0; }
+        
+        .btn-add { margin-top: 10px; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background-color: #218838; }
+        
+        .botoes-acao { display: flex; gap: 15px; margin-top: 30px; }
+        .btn-visualizar { flex: 1; padding: 15px; background-color: #17a2b8; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn-visualizar:hover { background-color: #117a8b; }
+        .btn-gerar { flex: 1; padding: 15px; background-color: #004488; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn-gerar:hover { background-color: #003366; }
+
+        .reuniao-item { display: flex; gap: 10px; margin-top: 10px; padding: 10px; background-color: #f1f1f1; border-radius: 4px; align-items: flex-start; }
+        .reuniao-item .data-reuniao, .reuniao-item .hora-reuniao { flex: 1; }
+        .reuniao-item .desc-reuniao { flex: 3; resize: vertical; }
+        
+        .btn-remover { margin-top: 5px; padding: 10px 15px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-remover:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+
+<img id="logo-camara" src="logo.png" style="display: none;" alt="Logo Câmara">
+
+<div class="container">
+    <h2>Formulário: Relatório de Viagem</h2>
+
+    <form id="formRelatorio">
+        <h3>Dados Gerais</h3>
+        <label>Portaria Nº:</label>
+        <input type="text" id="portaria" placeholder="Ex: 123/2026" required>
+
+        <div class="linha-dupla">
+            <div>
+                <label>Beneficiado (a):</label>
+                <input list="listaBeneficiados" id="beneficiado" placeholder="Selecione ou digite..." required>
+                <datalist id="listaBeneficiados">
+                    <option value="Ver. Adson Príncipe">
+                    <option value="Ver. Alex Garcia">
+                    <option value="Ver. Azamor Pessoa">
+                    <option value="Ver. Babá Tupinambá">
+                    <option value="Ver. Cabo Linhares">
+                    <option value="Ver. Fábio Cardoso">
+                    <option value="Ver. Fernando Menezes">
+                    <option value="Ver. Flávio Farias">
+                    <option value="Ver. Julvan Medeiros">
+                    <option value="Ver. Márcia Baranda">
+                    <option value="Ver. Marcus Cursino">
+                    <option value="Ver. Naldo Lima">
+                    <option value="Ver. Telo Pinto">
+                </datalist>
+            </div>
+            <div>
+                <label>Matrícula:</label>
+                <input type="text" id="matricula" required>
+            </div>
+        </div>
+
+        <div class="linha-dupla">
+            <div>
+                <label>Cargo/Função:</label>
+                <select id="cargo" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    <option value="Vereador">Vereador</option>
+                    <option value="Servidor Efetivo">Servidor Efetivo</option>
+                    <option value="Servidor Comissionado">Servidor Comissionado</option>
+                </select>
+            </div>
+            <div>
+                <label>Destino:</label>
+                <input type="text" id="destino" placeholder="Ex: Manaus" required>
+            </div>
+        </div>
+
+        <div class="linha-dupla">
+            <div>
+                <label>Meio de Transporte:</label>
+                <select id="transporte" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    <option value="Barco">Barco</option>
+                    <option value="Lancha">Lancha</option>
+                    <option value="Avião">Avião</option>
+                </select>
+            </div>
+            <div>
+                <label>Valor Total:</label>
+                <input type="text" id="valor" oninput="mascaraMoeda(this)" placeholder="R$ 0,00" required>
+            </div>
+        </div>
+
+        <div class="linha-dupla">
+            <div>
+                <label>Quantidade de Diárias:</label>
+                <input type="number" id="diarias" required>
+            </div>
+            <div>
+                <label>Período de Diárias:</label>
+                <div class="datas-periodo">
+                    <input type="date" id="diariasInicio">
+                    <span>a</span>
+                    <input type="date" id="diariasFim">
+                </div>
+            </div>
+        </div>
+        
+        <label>Período de Gasolina:</label>
+        <div class="datas-periodo">
+            <input type="date" id="gasolinaInicio">
+            <span>a</span>
+            <input type="date" id="gasolinaFim">
+        </div>
+
+        <label>Objetivo da Viagem:</label>
+        <textarea id="objetivo" rows="2" placeholder="Descreva o objetivo geral" required></textarea>
+
+        <h3>Atividades Desenvolvidas</h3>
+        
+        <label style="color: #004488;">1. Dados do Deslocamento</label>
+        <div class="linha-dupla">
+            <div>
+                <label>Data da Viagem (Ida):</label>
+                <input type="date" id="dataIda">
+            </div>
+            <div>
+                <label>Horário de Saída:</label>
+                <input type="time" id="horaSaida">
+            </div>
+        </div>
+        <div class="linha-dupla">
+            <div>
+                <label>Horário de Chegada:</label>
+                <input type="time" id="horaChegada">
+            </div>
+            <div>
+                <label>Data de Retorno Previsto:</label>
+                <input type="date" id="dataRetorno">
+            </div>
+        </div>
+
+        <label style="color: #004488; margin-top: 20px;">2. Reuniões Participadas</label>
+        <div id="reunioesContainer">
+            <div class="reuniao-item">
+                <input type="date" class="data-reuniao" required>
+                <input type="time" class="hora-reuniao" required>
+                <textarea class="desc-reuniao" rows="2" placeholder="Local/Descrição (Ex: SEDUC)" required></textarea>
+                <button type="button" class="btn-remover" onclick="removerReuniao(this)" title="Remover Reunião">X</button>
+            </div>
+        </div>
+        <button type="button" class="btn-add" onclick="adicionarReuniao()">+ Adicionar Nova Reunião</button>
+
+        <div class="botoes-acao">
+            <button type="button" class="btn-visualizar" onclick="visualizarPDF()">Visualizar PDF</button>
+            <button type="button" class="btn-gerar" onclick="baixarPDF()">Baixar PDF</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    function mascaraMoeda(campo) {
+        let valor = campo.value.replace(/\D/g, ''); 
+        if (valor === "") {
+            campo.value = "";
+            return;
+        }
+        valor = (valor / 100).toFixed(2) + '';
+        valor = valor.replace(".", ",");
+        valor = valor.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+        campo.value = 'R$ ' + valor;
+    }
+
+    function formatarDataBR(dataIso) {
+        if (!dataIso) return "";
+        const partes = dataIso.split("-");
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+    }
+
+    function adicionarReuniao() {
+        const container = document.getElementById('reunioesContainer');
+        const novaReuniao = document.createElement('div');
+        novaReuniao.className = 'reuniao-item';
+        novaReuniao.innerHTML = `
+            <input type="date" class="data-reuniao" required>
+            <input type="time" class="hora-reuniao" required>
+            <textarea class="desc-reuniao" rows="2" placeholder="Local/Descrição" required></textarea>
+            <button type="button" class="btn-remover" onclick="removerReuniao(this)" title="Remover Reunião">X</button>
+        `;
+        container.appendChild(novaReuniao);
+    }
+
+    function removerReuniao(botao) {
+        botao.parentElement.remove();
+    }
+
+    function addRodape(doc) {
+        doc.setFontSize(8);
+        doc.setFont("helvetica", "normal");
+        const rodape1 = "Rua Umiri, 781 - Conjunto Macurany - CEP: 69.151-420 - CNPJ: 04.442.941/0001-36 - Fone: (92) 99111-5918";
+        const rodape2 = "www.parintins.am.leg.br - e-mail: cmp@parintins.am.leg.br - @parintins.am.leg.br";
+        doc.text(rodape1, 105, 285, null, null, "center");
+        doc.text(rodape2, 105, 289, null, null, "center");
+    }
+
+    function montarPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        const portaria = document.getElementById('portaria').value;
+        const beneficiado = document.getElementById('beneficiado').value;
+        const matricula = document.getElementById('matricula').value;
+        const cargo = document.getElementById('cargo').value;
+        const destino = document.getElementById('destino').value;
+        const transporte = document.getElementById('transporte').value;
+        const diarias = document.getElementById('diarias').value;
+        const valor = document.getElementById('valor').value;
+        
+        const pDiariasIni = formatarDataBR(document.getElementById('diariasInicio').value);
+        const pDiariasFim = formatarDataBR(document.getElementById('diariasFim').value);
+        const periodoDiarias = (pDiariasIni && pDiariasFim) ? `${pDiariasIni} a ${pDiariasFim}` : "";
+
+        const pGasolinaIni = formatarDataBR(document.getElementById('gasolinaInicio').value);
+        const pGasolinaFim = formatarDataBR(document.getElementById('gasolinaFim').value);
+        const periodoGasolina = (pGasolinaIni && pGasolinaFim) ? `${pGasolinaIni} a ${pGasolinaFim}` : "";
+
+        const objetivo = document.getElementById('objetivo').value;
+
+        let y = 30;
+        const h = 7.5; 
+        const margem = 15;
+        const largura = 180;
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("RELATÓRIO DE VIAGEM", 105, 22, null, null, "center");
+
+        // ---- AQUI A LOGO É INSERIDA NO PDF ----
+        try {
+            const logo = document.getElementById('logo-camara');
+            // Desenha a logo (imagem, formato, posição X, posição Y, largura, altura)
+            // Se a proporção ficar distorcida, ajuste os números 22 (largura) e 22 (altura)
+            doc.addImage(logo, 'PNG', 15, 8, 22, 22); 
+        } catch(e) {
+            console.log("Logo não encontrada ou não carregada.");
+        }
+        // ---------------------------------------
+
+        doc.setFontSize(10);
+        
+        function desenharLinha(label1, valor1, x1, w1, label2, valor2, x2, w2, offsetTexto) {
+            doc.rect(x1, y, w1, h);
+            doc.setFont("helvetica", "bold");
+            doc.text(label1, x1 + 2, y + 5.2);
+            doc.setFont("helvetica", "normal");
+            doc.text(valor1, x1 + offsetTexto, y + 5.2);
+            
+            if(label2) {
+                doc.rect(x2, y, w2, h);
+                doc.setFont("helvetica", "bold");
+                doc.text(label2, x2 + 2, y + 5.2);
+                doc.setFont("helvetica", "normal");
+                doc.text(valor2, x2 + 20, y + 5.2);
+            }
+            y += h;
+        }
+
+        desenharLinha("Portaria Nº", portaria + " -CMP,", margem, largura, null, null, null, null, 22);
+        desenharLinha("Beneficiado (a):", beneficiado, margem, 130, "Matrícula:", matricula, margem + 130, 50, 28);
+        desenharLinha("Cargo/Função:", cargo, margem, largura, null, null, null, null, 28);
+        desenharLinha("Destino:", destino, margem, 110, "Transporte:", transporte, margem + 110, 70, 18);
+        desenharLinha("Quantidade de Diárias:", diarias, margem, 110, "Valor:", valor, margem + 110, 70, 42);
+        desenharLinha("Período de Gasolina:", periodoGasolina, margem, largura, null, null, null, null, 38);
+        desenharLinha("Período de Diárias:", periodoDiarias, margem, largura, null, null, null, null, 35);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Objetivo:", margem + 2, y + 5.2);
+        doc.setFont("helvetica", "normal");
+        const objetivoLinhas = doc.splitTextToSize(objetivo, largura - 4);
+        let alturaObjetivo = 8 + (objetivoLinhas.length * 4.5);
+        if (alturaObjetivo < h) alturaObjetivo = h;
+        
+        doc.rect(margem, y, largura, alturaObjetivo);
+        doc.text(objetivoLinhas, margem + 20, y + 5.2);
+        y += alturaObjetivo;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Atividades Desenvolvidas:", margem + 2, y + 5.2);
+        doc.setFont("helvetica", "normal");
+        
+        const margemFundo = 275;
+        doc.rect(margem, y, largura, margemFundo - y);
+
+        let yTexto = y + 12;
+
+        const dataIda = formatarDataBR(document.getElementById('dataIda').value);
+        const horaSaida = document.getElementById('horaSaida').value;
+        const horaChegada = document.getElementById('horaChegada').value;
+        const dataRetorno = formatarDataBR(document.getElementById('dataRetorno').value);
+
+        if(dataIda) {
+            const textoViagem = `No dia ${dataIda}, realizei viagem à capital do estado – Manaus, marcada para o horário de ${horaSaida}, do Porto de Parintins, chegando a Balsa Amarela (Manaus), às ${horaChegada} horas, com meu retorno previsto para o dia ${dataRetorno}.`;
+            const linhasViagem = doc.splitTextToSize(textoViagem, largura - 6);
+            doc.text(linhasViagem, margem + 3, yTexto);
+            yTexto += (linhasViagem.length * 5) + 4;
+        }
+
+        const reunioes = document.querySelectorAll('.reuniao-item');
+        reunioes.forEach((reuniao) => {
+            const dataR = formatarDataBR(reuniao.querySelector('.data-reuniao').value);
+            const horaR = reuniao.querySelector('.hora-reuniao').value;
+            const descR = reuniao.querySelector('.desc-reuniao').value;
+
+            if(dataR && horaR && descR) {
+                const textoReuniao = `No dia ${dataR} às ${horaR} horas, participei de uma reunião na/no ${descR}.`;
+                const linhasReuniao = doc.splitTextToSize(textoReuniao, largura - 6);
+                
+                if (yTexto > margemFundo - 10) {
+                    addRodape(doc);
+                    doc.addPage();
+                    yTexto = 20;
+                    doc.rect(margem, 15, largura, margemFundo - 15);
+                }
+
+                doc.text(linhasReuniao, margem + 3, yTexto);
+                yTexto += (linhasReuniao.length * 5) + 4;
+            }
+        });
+
+        addRodape(doc); 
+        return doc;
+    }
+
+    function visualizarPDF() {
+        const doc = montarPDF();
+        window.open(doc.output('bloburl'), '_blank');
+    }
+
+    function baixarPDF() {
+        const doc = montarPDF();
+        doc.save("Relatorio_de_Viagem.pdf");
+    }
+</script>
+
+</body>
+</html>
